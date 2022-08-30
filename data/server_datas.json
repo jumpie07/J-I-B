@@ -1,0 +1,23 @@
+{
+    "IceTopia": {
+        "id": 931944391768170516,
+        "warns": {
+            "Schwerthecht": 1025,
+            "jumpie07": 8,
+            "Ice Warrior": 1
+        },
+        "rules": {
+            ":cookie: Regel 1:": "**Kekse** sind das **beste** der Welt!!!",
+            ":v: Regel 2:": "**Respektvoller Umgang** mit anderen Mitgliedern (**Keine** *Beleidigungen, Spam, sexuelle/nazistische Inhalte *oder andere schlechte *Dinge)*",
+            ":busts_in_silhouette: Regel 3:": "**Name** und **Portfolio** d\u00fcrfen **keine Beleidigungen** beinhalten",
+            ":octagonal_sign: Regel 4:": "**Werbung** ist nur mit **Nachfrage** bei Admins oder Moderationen erlaubt"
+        },
+        "rule_description": "*Bei **Versto\u00df** gegen die Regeln wird je nach Fall ein **Ban, Kick** oder eine **Verwarnung** ausgesprochen\n\n Klicke auf den  Button unter dieser Nachricht um zu best\u00e4tigen das du die Regeln gelesen hast und diese akzeptierst.*",
+        "member_role_id": 931983075754274846
+    },
+    "Server :D": {
+        "id": 889525475704184902,
+        "warns": {},
+        "rules": {}
+    }
+}
