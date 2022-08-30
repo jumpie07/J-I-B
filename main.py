@@ -226,7 +226,8 @@ async def add_description(ctx: interactions.CommandContext, content: str):
 )
 async def remove_description(ctx: interactions.CommandContext):
     if not("rule_description" in servers[ctx.guild.name].keys()):
-        await ctx.send(f"There is no rule description on this server!")
+        await ctx.send(f"There is no rule description on this server!", ephemeral=True)
+        return
     servers[ctx.guild.name].pop("rule_description")
     with open("./data/server_datas.json", "w") as sI:
         json.dump(servers, sI, indent=4)
