@@ -18,13 +18,13 @@ guild_ids = [servers[server]["id"] for server in servers]  # server ids
 muted_users = []  # list of user who muted
 
 # define Bot client variable
-bot = interactions.Client(token="your token",
+bot = interactions.Client(token="OTkxMDEyMzMzMjIyNTE0NzQ4.GLwz5q.8ZkAe93gusfjvARE0711UHNbcaJ-ISiN3AA1dU",
                           intents=interactions.Intents.DEFAULT | interactions.Intents.GUILD_MEMBERS,
                           presence=interactions.ClientPresence(
                               activities=[interactions.PresenceActivity(
                                   name="/help",
                                   type=interactions.PresenceActivityType.GAME)],
-                              status=interactions.StatusType.DND
+                              status=interactions.StatusType.ONLINE
                           )
                           )
 
@@ -225,6 +225,8 @@ async def add_description(ctx: interactions.CommandContext, content: str):
     scope=guild_ids
 )
 async def remove_description(ctx: interactions.CommandContext):
+    if not("rule_description" in servers[ctx.guild.name].keys()):
+        await ctx.send(f"There is no rule description on this server!")
     servers[ctx.guild.name].pop("rule_description")
     with open("./data/server_datas.json", "w") as sI:
         json.dump(servers, sI, indent=4)
