@@ -567,7 +567,7 @@ async def help_menu(ctx: interactions.CommandContext):
     wiki_btn = interactions.Button(
         style=interactions.ButtonStyle.LINK,
         label="Wiki",
-        url="https://github.com/jumpie07/jump-ice-dc.bot/blob/main/wiki.mde",
+        url="https://github.com/jumpie07/J-I-B/wiki",
     )
 
     row = interactions.ActionRow.new(back_btn, next_btn, wiki_btn)
@@ -615,81 +615,5 @@ async def func(ctx: interactions.ComponentContext):
     embed.color = int(('#%02x%02x%02x' % (124, 255, 48)).replace("#", "0x"), base=16)
     # edit message
     await ctx.edit(embeds=embed)
-    # await ctx.send(embeds=embed)
-
-
-# =====================================================================================================================
-# Test system for SELECT-MENUS
-
-@bot.command(
-    name="add_choose_element",
-    description="Add a role to the Role choose box. See /help for more infos",
-    scope=guild_ids,
-    default_member_permissions=interactions.Permissions.MANAGE_ROLES,
-    options=[
-        interactions.Option(
-            name="role",
-            description="The role you want to add",
-            type=interactions.OptionType.ROLE,
-            required=True,
-        ),
-    ],
-)
-async def test(ctx):
-    pass
-
-
-@bot.command(
-    name="add_select_menu",
-    description="Only a test function for testing select-menus",
-    scope=guild_ids,
-    default_member_permissions=interactions.Permissions.ADMINISTRATOR,
-    options=[
-        interactions.Option(
-            name="msg_id",
-            description="ID of the message",
-            type=interactions.OptionType.STRING,
-            required=True,
-        ),
-    ],
-)
-async def add_chooser_test(ctx: interactions.ComponentContext, msg_id):
-    # get the message
-    msg = await interactions.get(bot, interactions.Message, parent_id=int(ctx.channel_id), object_id=int(msg_id))
-    # if message not from bot -> return
-    if msg.author != bot.me: return await ctx.send("Du bist ein Kek")
-    select_test = interactions.SelectMenu(
-        options=[
-            interactions.SelectOption(
-                label="Mitglied",
-                value=911297730373120060,
-                description="Role for Almans"
-            ),
-            interactions.SelectOption(
-                label="Terraconia Spieler",
-                value=911925141594845235,
-                description="If you play on Terraconia"
-            ),
-            interactions.SelectOption(
-                label="Kek",
-                value=1011224145440292945,
-                description="If you be a Kek"
-            )
-        ],
-        placeholder="Wähle deine Rollen",
-        custom_id="test_menu_component",
-        max_values=3
-    )
-    await msg.edit(components=select_test)
-    await ctx.send("Setup successfully", ephemeral=True)
-
-
-@bot.component("test_menu_component")
-async def func(ctx: interactions.ComponentContext, role_ids: list[str]):
-    for roleid in role_ids:
-        if not roleid in ctx.author.roles:
-            await ctx.author.add_role(int(roleid), int(ctx.guild_id))
-    await ctx.send(f"Ausgewählte rollen {role_ids}", ephemeral=True)
-
-
+    
 bot.start()
