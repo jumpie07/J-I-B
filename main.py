@@ -18,7 +18,7 @@ guild_ids = [servers[server]["id"] for server in servers]  # server ids
 muted_users = []  # list of user who muted
 
 # define Bot client variable
-bot = interactions.Client(token="OTkxMDEyMzMzMjIyNTE0NzQ4.GLwz5q.8ZkAe93gusfjvARE0711UHNbcaJ-ISiN3AA1dU",
+bot = interactions.Client(token="your token",
                           intents=interactions.Intents.DEFAULT | interactions.Intents.GUILD_MEMBERS,
                           presence=interactions.ClientPresence(
                               activities=[interactions.PresenceActivity(
