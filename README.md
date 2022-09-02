@@ -2,7 +2,7 @@
 
 ## Currently in Progress
 
-- help command
+- reate Wiki
 - new function for warn system: see warns of specific user
 - Role-Selecter for getting roles fitted to own intrestings
 
@@ -10,7 +10,6 @@
 
 - [ ] music implementation
 - [ ] Webboard for Admin (in Progress)
-- [ ] create Wiki
 - [ ] Mor logs for better Debuging
 
 ## Done
@@ -26,3 +25,4 @@
 - [x] sends welcome message on member join
 - [x] warn command to warn users for mistakes
 this project is licensed under the terms of the GPLv3 license.
+- [x] help command
