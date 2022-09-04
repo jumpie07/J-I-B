@@ -18,7 +18,7 @@ guild_ids = [servers[server]["id"] for server in servers]  # server ids
 muted_users = []  # list of user who muted
 
 # define Bot client variable
-bot = interactions.Client(token="your token",
+bot = interactions.Client(token=input("Your bot token"),
                           intents=interactions.Intents.DEFAULT | interactions.Intents.GUILD_MEMBERS,
                           presence=interactions.ClientPresence(
                               activities=[interactions.PresenceActivity(
@@ -247,7 +247,7 @@ async def rules(ctx: interactions.CommandContext):
         return await ctx.send("No Rules specified! Please add rules via `/rule_add` or a description via "
                               "`/add_rule_description`– For more infos type `/help`")
     embed = interactions.Embed()
-    embed.title = f"Regeln von {ctx.guild.name}"
+    embed.title = f"Rules of {ctx.guild.name}"
     if "rule_description" in servers[ctx.guild.name].keys():
         embed.description = servers[ctx.guild.name]["rule_description"]
     for rule in servers[ctx.guild.name]["rules"].keys():
@@ -615,5 +615,116 @@ async def func(ctx: interactions.ComponentContext):
     embed.color = int(('#%02x%02x%02x' % (124, 255, 48)).replace("#", "0x"), base=16)
     # edit message
     await ctx.edit(embeds=embed)
-    
+    # await ctx.send(embeds=embed)
+
+
+# =====================================================================================================================
+# SELECT-MENUS system
+
+@bot.command(
+    name="add_selection_role",
+    description="Add a role to the Role selection box. See /help for more info's",
+    scope=guild_ids,
+    default_member_permissions=interactions.Permissions.MANAGE_ROLES,
+    options=[
+        interactions.Option(
+            name="role",
+            description="The role you want to add",
+            type=interactions.OptionType.ROLE,
+            required=True,
+        ),
+    ],
+)
+async def add_selection_role(ctx: interactions.CommandContext, role: interactions.Role):
+    if "rolebox" in servers[ctx.guild.name].keys():
+        if len(servers[ctx.guild.name]["rolebox"]) == 10:
+            return await ctx.send("You can add a maximum of 10 roles!", ephramel=True)
+        if int(role.id) in servers[ctx.guild.name]["rolebox"]:
+            return await ctx.send("You already added this role!", ephramel=True)
+        servers[ctx.guild.name]["rolebox"].append(int(role.id))
+    else:
+        servers[ctx.guild.name].update({"rolebox": [int(role.id)]})
+    with open("./data/server_datas.json", "w") as sI:
+        json.dump(servers, sI, indent=4)
+    return await ctx.send("Role successfully added!", ephemeral=True)
+
+@bot.command(
+    name="remove_selection_role",
+    description="Removes a role from the Role selection box. See /help for more info's",
+    scope=guild_ids,
+    default_member_permissions=interactions.Permissions.MANAGE_ROLES,
+    options=[
+        interactions.Option(
+            name="role",
+            description="The role you want to remove",
+            type=interactions.OptionType.ROLE,
+            required=True,
+        ),
+    ],
+)
+async def remove_selection_role(ctx: interactions.CommandContext, role: interactions.Role):
+    if "rolebox" in servers[ctx.guild.name].keys():
+        if not(int(role.id) in servers[ctx.guild.name]["rolebox"]):
+            return await ctx.send("the role was not added to the selection or deleted.", ephemeral=True)
+        servers[ctx.guild.name]["rolebox"].remove(int(role.id))
+        if len(servers[ctx.guild.name]["rolebox"]) == 0:
+            servers[ctx.guild.name].pop("rolebox")
+        with open("./data/server_datas.json", "w") as sI:
+            json.dump(servers, sI, indent=4)
+        return await ctx.send("Role successfully removed!", ephemeral=True)
+    return await ctx.send("No rolls saved in the selection. See /help for more info's", ephemeral=True)
+
+
+@bot.command(
+    name="add_select_menu",
+    description="Adds a Discord Select-menu Component to specified message. See /help for detailed description",
+    scope=guild_ids,
+    default_member_permissions=interactions.Permissions.ADMINISTRATOR,
+    options=[
+        interactions.Option(
+            name="msg_id",
+            description="ID of the message",
+            type=interactions.OptionType.STRING,
+            required=True,
+        ),
+    ],
+)
+async def add_select_menu(ctx: interactions.ComponentContext, msg_id: str):
+    # check if elements for the menu are available
+    if not("rolebox" in servers[ctx.guild.name].keys()):
+        return await ctx.send("You first need to add roles with /add_selection_role. Check out /help for more info's",
+                              ephemeral=True)
+    # get the message
+    msg = await interactions.get(bot, interactions.Message, parent_id=int(ctx.channel_id), object_id=int(msg_id))
+    # if message not from bot -> return
+    if msg.author != bot.me: return await ctx.send("Message must come from the bot! See /help", ephemeral=True)
+
+    # create select menu component
+    select_menu = interactions.SelectMenu(
+        options=[],
+        placeholder="Choose your role",
+        custom_id="role_choose",
+        max_values=len(servers[ctx.guild.name]["rolebox"])
+    )
+    options = []
+    for role_id in servers[ctx.guild.name]["rolebox"]:
+        options.append(
+            interactions.SelectOption(
+                label=(await ctx.guild.get_role(role_id)).name,
+                value=role_id,
+            )
+        )
+    select_menu.options = options
+
+    await msg.edit(components=select_menu)
+    await ctx.send("Setup successfully", ephemeral=True)
+
+
+@bot.component("role_choose")
+async def func(ctx: interactions.ComponentContext, role_ids: list[str]):
+    for role_id in role_ids:
+        if not(role_id in ctx.author.roles):
+            await ctx.author.add_role(int(role_id), int(ctx.guild_id))
+    await ctx.send(f"Chosen roles {role_ids}", ephemeral=True)
+
 bot.start()
