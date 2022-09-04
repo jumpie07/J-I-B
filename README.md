@@ -2,13 +2,13 @@
 
 ## Currently in Progress
 
-- reate Wiki
+- create Wiki
 - new function for warn system: see warns of specific user
 - Role-Selecter for getting roles fitted to own intrestings
+- music implementation
 
 ## To-Do
 
-- [ ] music implementation
 - [ ] Webboard for Admin (in Progress)
 - [ ] Mor logs for better Debuging
 
