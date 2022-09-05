@@ -18,12 +18,12 @@ guild_ids = [servers[server]["id"] for server in servers]  # server ids
 muted_users = []  # list of user who muted
 
 # define Bot client variable
-bot = interactions.Client(token=input("Your bot token"),
+bot = interactions.Client(token=input("Please enter your bottoken: "),
                           intents=interactions.Intents.DEFAULT | interactions.Intents.GUILD_MEMBERS,
                           presence=interactions.ClientPresence(
                               activities=[interactions.PresenceActivity(
                                   name="/help",
-                                  type=interactions.PresenceActivityType.GAME)],
+                                  type=interactions.PresenceActivityType.WATCHING)],
                               status=interactions.StatusType.ONLINE
                           )
                           )
@@ -39,11 +39,7 @@ async def on_ready():
     try:
         guild = await interactions.get(bot, interactions.Guild, object_id=931944391768170516)
         total_member_channel = await interactions.get(bot, interactions.Channel, object_id=932174956937228298)
-
-        # derzeit nicht möglich online status eines users abzufragen
-        ### online_member_channel = await get(bot, interactions.Channel, channel_id=932174992853061662)
-        ### members = await guild.get_all_members()
-
+        
         await total_member_channel.set_name(f'Total Members: {guild.member_count}')
     except Exception as e:
         print(f"\n\033[91m[ERROR]:\033[00m Error occurred on setting name for Members-Channel"
@@ -55,6 +51,8 @@ async def on_ready():
 @bot.event
 async def on_guild_create(ctx: interactions.Guild):
     if not ctx.id in guild_ids:
+        # add new id to guild_ids list
+        guild_ids.append(ctx.id)
         # new entry in server_datas.json
         servers.update({ctx.name: {"id": int(ctx.id), "warns": {}, "rules": {}}})
         with open("./data/server_datas.json", "w") as sI:
@@ -62,16 +60,19 @@ async def on_guild_create(ctx: interactions.Guild):
         # Send welcome message
         embed = interactions.Embed()
         embed.title = "Hey there! :wave:"
-        embed.description = "Hello, thank you for adding me to your Server! Before\
-                we can start I need first some informations for handling your Server. \
-                Please run following commands to configure your Server: \n\
-                • `/set server id` – Copy the server id by right-clicking on the server \
-                in the Serverlist on the left side of your screen\n\
-                • `/set member role id` – Set the id of the role you want to give users \
-                after applying to the Serverrules\n\n **Thank you thats all, have fun!**"
+        embed.description = "Hello, thank you for adding me to your Server! \n\n" \
+                            "If you want to use the full functionality of the " \
+                            "bot you have to confer several things first. \nFor more " \
+                            "details you should read the **linked wiki** of this bot on GitHub." \
+                            " Otherwise you can also call `/help` to briefly look up " \
+                            "a command and its function! \n\nHave fun with the bot ^^"
         embed.color = int(('#%02x%02x%02x' % (90, 232, 240)).replace("#", "0x"), base=16)
         channel = await interactions.get(bot, interactions.Channel, object_id=int(ctx.system_channel_id))
-        await channel.send(embeds=embed)
+        await channel.send(embeds=embed, components=interactions.Button(
+            style=interactions.ButtonStyle.LINK,
+            label="Wiki",
+            url="https://github.com/jumpie07/J-I-B/wiki",
+        ))
 
 
 # =====================================================================================================================
@@ -82,7 +83,6 @@ async def on_guild_create(ctx: interactions.Guild):
 @bot.command(
     name="add_rule_accept-button",
     description="Define a message that contains the rules",
-    scope=guild_ids,
     default_member_permissions=interactions.Permissions.ADMINISTRATOR,
     options=[
         interactions.Option(
@@ -127,7 +127,6 @@ async def func(ctx: interactions.ComponentContext):
     name="set_rule_role",
     description="Set the rule that a member get if he accept to the roles",
     default_member_permissions=interactions.Permissions.MANAGE_ROLES,
-    scope=guild_ids,
     options=[
         interactions.Option(
             name="role",
@@ -149,7 +148,6 @@ async def set_rule_role(ctx: interactions.CommandContext, role: interactions.Rol
 @bot.command(
     name="add_rule",
     description="Add a new rule to the server",
-    scope=guild_ids,
     options=[
         interactions.Option(
             name="title",
@@ -177,7 +175,6 @@ async def add_rule(ctx: interactions.CommandContext, title: str, content: str):
 @bot.command(
     name="remove_rule",
     description="Remove a rule from the server",
-    scope=guild_ids,
     options=[
         interactions.Option(
             name="title",
@@ -200,7 +197,6 @@ async def remove_rule(ctx: interactions.CommandContext, title: str):
 @bot.command(
     name="add_rule_description",
     description="Add a description to your Serverrules",
-    scope=guild_ids,
     options=[
         interactions.Option(
             name="content",
@@ -240,7 +236,6 @@ async def remove_description(ctx: interactions.CommandContext):
 @bot.command(
     name="rules",
     description="Shows the rules of the server",
-    scope=guild_ids,
 )
 async def rules(ctx: interactions.CommandContext):
     if servers[ctx.guild.name]["rules"] == {} and not "rule_description" in servers[ctx.guild.name].keys():
@@ -262,7 +257,6 @@ async def rules(ctx: interactions.CommandContext):
     name="kick",
     description="Command to kick a user",
     default_member_permissions=interactions.Permissions.KICK_MEMBERS,
-    scope=guild_ids,
     options=[
         interactions.Option(
             name="user",
@@ -282,7 +276,6 @@ async def kick(ctx: interactions.CommandContext, user: interactions.User):
 @bot.command(
     name="ban",
     description="Command to ban a user",
-    scope=guild_ids,
     default_member_permissions=interactions.Permissions.BAN_MEMBERS,
     options=[
         interactions.Option(
@@ -313,7 +306,6 @@ async def ban(ctx: interactions.CommandContext, user: interactions.User, reason:
 @bot.command(
     name="unban",
     description="Command to unban a user",
-    scope=guild_ids,
     default_member_permissions=interactions.Permissions.BAN_MEMBERS,
     options=[
         interactions.Option(
@@ -334,7 +326,6 @@ async def unban(ctx: interactions.CommandContext, user):
 @bot.command(
     name="add_role",
     description="Command to assign a role to a user",
-    scope=guild_ids,
     default_member_permissions=interactions.Permissions.MANAGE_ROLES,
     options=[
         interactions.Option(
@@ -366,7 +357,6 @@ async def add_role(ctx: interactions.CommandContext, user: interactions.User, ro
 @bot.command(
     name="remove_role",
     description="Command to remove a role from a user",
-    scope=guild_ids,
     default_member_permissions=interactions.Permissions.MANAGE_ROLES,
     options=[
         interactions.Option(
@@ -398,7 +388,6 @@ async def remove_role(ctx: interactions.CommandContext, user: interactions.User,
 @bot.command(
     name="warn",
     description="Command to warn a user",
-    scope=guild_ids,
     default_member_permissions=interactions.Permissions.KICK_MEMBERS,
     options=[
         interactions.Option(
@@ -443,7 +432,6 @@ async def warn(ctx: interactions.CommandContext, user: interactions.Member, reas
 @bot.command(
     name="mute",
     description="Command to mute a user",
-    scope=guild_ids,
     default_member_permissions=interactions.Permissions.MUTE_MEMBERS,
     options=[
         interactions.Option(
@@ -464,7 +452,6 @@ async def mute(ctx: interactions.CommandContext, user: interactions.User):
 @bot.command(
     name="msg_delete",
     description="Deletes all last count messages",
-    scope=guild_ids,
     default_member_permissions=interactions.Permissions.MANAGE_MESSAGES,
     options=[
         interactions.Option(
@@ -516,7 +503,6 @@ async def on_guild_member_remove(ctx):
 @bot.command(
     name="meme",
     description="post a random meme",
-    scope=guild_ids,
 )
 async def meme(ctx: interactions.CommandContext):
     async def gen_meme():
@@ -538,7 +524,6 @@ async def meme(ctx: interactions.CommandContext):
 @bot.command(
     name="help",
     description="Sends help menu to all commands and functions",
-    scope=guild_ids,
 )
 async def help_menu(ctx: interactions.CommandContext):
     # Create Embed Message
@@ -624,7 +609,6 @@ async def func(ctx: interactions.ComponentContext):
 @bot.command(
     name="add_selection_role",
     description="Add a role to the Role selection box. See /help for more info's",
-    scope=guild_ids,
     default_member_permissions=interactions.Permissions.MANAGE_ROLES,
     options=[
         interactions.Option(
@@ -651,7 +635,6 @@ async def add_selection_role(ctx: interactions.CommandContext, role: interaction
 @bot.command(
     name="remove_selection_role",
     description="Removes a role from the Role selection box. See /help for more info's",
-    scope=guild_ids,
     default_member_permissions=interactions.Permissions.MANAGE_ROLES,
     options=[
         interactions.Option(
@@ -678,7 +661,6 @@ async def remove_selection_role(ctx: interactions.CommandContext, role: interact
 @bot.command(
     name="add_select_menu",
     description="Adds a Discord Select-menu Component to specified message. See /help for detailed description",
-    scope=guild_ids,
     default_member_permissions=interactions.Permissions.ADMINISTRATOR,
     options=[
         interactions.Option(
