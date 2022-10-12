@@ -25,4 +25,6 @@
 - [x] sends welcome message on member join
 - [x] warn command to warn users for mistakes
 - [x] help command
+
+
 this project is licensed under the terms of the GPLv3 license.
