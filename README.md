@@ -24,5 +24,5 @@
 - [x] new data system for individuell server settings/handling
 - [x] sends welcome message on member join
 - [x] warn command to warn users for mistakes
-this project is licensed under the terms of the GPLv3 license.
 - [x] help command
+this project is licensed under the terms of the GPLv3 license.
