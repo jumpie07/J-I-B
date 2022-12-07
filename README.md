@@ -10,7 +10,7 @@
 ## To-Do
 
 - [ ] Webboard for Admin (in Progress)
-- [ ] Mor logs for better Debuging
+- [ ] More logs for better Debugging
 
 ## Done
 
