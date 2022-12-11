@@ -499,24 +499,27 @@ async def on_guild_member_remove(ctx):
 
 
 # =====================================================================================================================
-# MEME generator command
-@bot.command(
-    name="meme",
-    description="post a random meme",
-)
-async def meme(ctx: interactions.CommandContext):
-    async def gen_meme():
-        meme_json = requests.get("https://meme-api.herokuapp.com/gimme").text
-        loaded = json.loads(meme_json)
-        title = loaded["title"]
-        url = loaded["url"]
-        nsfw = loaded["nsfw"]
-        return title, url, nsfw
 
-    nsfw = True
-    while nsfw != False:
-        title, url, nsfw = await gen_meme()
-    await ctx.send(f"**{title}**\n{url}")
+#Does not work anymore
+
+# MEME generator command
+#@bot.command(
+#    name="meme",
+#    description="post a random meme",
+#)
+#async def meme(ctx: interactions.CommandContext):
+#    async def gen_meme():
+#        meme_json = requests.get("https://meme-api.herokuapp.com/gimme").text
+#        loaded = json.loads(meme_json)
+#        title = loaded["title"]
+#        url = loaded["url"]
+#        nsfw = loaded["nsfw"]
+#        return title, url, nsfw
+#
+#    nsfw = True
+#    while nsfw != False:
+#        title, url, nsfw = await gen_meme()
+#    await ctx.send(f"**{title}**\n{url}")
 
 
 # =====================================================================================================================
