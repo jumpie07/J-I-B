@@ -604,8 +604,22 @@ async def func(ctx: interactions.ComponentContext):
     # edit message
     await ctx.edit(embeds=embed)
     # await ctx.send(embeds=embed)
-
-
+# =====================================================================================================================
+# Send message command
+@bot.command(
+    name="send",
+    description="Sends a Message",
+    options=[
+        interactions.Option(
+            name="msg",
+            description = "the message the bot sends",
+            type=interactions.OptionType.STRING,
+            required = True
+        )
+    ]
+)
+async def sendmsg(ctx: interactions.CommandContext,msg):
+    await ctx.send(msg)
 # =====================================================================================================================
 # SELECT-MENUS system
 
