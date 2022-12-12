@@ -33,7 +33,7 @@
         "fields": {
             "/add_role `user` `role`": "Adds the given role to the user. If given role has a higher warranty as bot has, it´s not possible to add the role to the user. If user already has the role, nothing happens.",
             "/remove_role `user` `role`": "Removes the given role from the user. If given role has a higher warranty as bot has, it´s not possible to remove the role from the user. If user has not had the role, nothing happens.",
-            "/meme": "Sends a randomly meme to this channel."
+            "/meme": "!!!DOESNT WORK ANYMORE!!! Sends a randomly meme to this channel."
         }
     },
     "page6": {
