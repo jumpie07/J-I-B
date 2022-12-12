@@ -40,5 +40,11 @@
         "fields": {
             "Functionality:": "Currently its sends a welcome message if member joined th Server. It also sends a welcome info if bot invited to a server. In the next major update he offers the option of a total Member advertisement. For more infos about new features in the future, see Git-Hub Repository of this bot."
         }
+    },
+    "page7": {
+        "fields": {
+            "/send": "Sends a message given by the user"
+        }
     }
 }
+
