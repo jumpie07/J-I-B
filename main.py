@@ -218,7 +218,6 @@ async def add_description(ctx: interactions.CommandContext, content: str):
 @bot.command(
     name="remove_rule_description",
     description="Removes current description from your Serverrules",
-    scope=guild_ids
 )
 async def remove_description(ctx: interactions.CommandContext):
     if not("rule_description" in servers[ctx.guild.name].keys()):
