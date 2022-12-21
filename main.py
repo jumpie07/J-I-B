@@ -18,7 +18,7 @@ guild_ids = [servers[server]["id"] for server in servers]  # server ids
 muted_users = []  # list of user who muted
 
 # define Bot client variable
-bot = interactions.Client(token=input("Please enter your bottoken: "),
+bot = interactions.Client(token=input("Please enter your Bot-Token: "),
                           intents=interactions.Intents.DEFAULT | interactions.Intents.GUILD_MEMBERS,
                           presence=interactions.ClientPresence(
                               activities=[interactions.PresenceActivity(
@@ -39,7 +39,7 @@ async def on_ready():
     try:
         guild = await interactions.get(bot, interactions.Guild, object_id=931944391768170516)
         total_member_channel = await interactions.get(bot, interactions.Channel, object_id=932174956937228298)
-        
+
         await total_member_channel.set_name(f'Total Members: {guild.member_count}')
     except Exception as e:
         print(f"\n\033[91m[ERROR]:\033[00m Error occurred on setting name for Members-Channel"
@@ -54,7 +54,7 @@ async def on_guild_create(ctx: interactions.Guild):
         # add new id to guild_ids list
         guild_ids.append(ctx.id)
         # new entry in server_datas.json
-        servers.update({ctx.name: {"id": int(ctx.id), "warns": {}, "rules": {}}})
+        servers.update({ctx.name: {"id": int(ctx.id), "warns": {}, "server_rules": {}}})
         with open("./data/server_datas.json", "w") as sI:
             json.dump(servers, sI, indent=4)
         # Send welcome message
@@ -79,155 +79,96 @@ async def on_guild_create(ctx: interactions.Guild):
 # RULE System
 
 # -----------------------------------------------------
-# ADD RULE ACCEPT button
+# DEFINE_SERVER_RULES command
+# define rules for your server -> if call function modal will pop up
 @bot.command(
-    name="add_rule_accept-button",
-    description="Define a message that contains the rules",
-    default_member_permissions=interactions.Permissions.ADMINISTRATOR,
-    options=[
-        interactions.Option(
-            name="msg_id",
-            description="ID of the message",
-            type=interactions.OptionType.STRING,
-            required=True,
-        ),
-    ],
+    name="define_server_rules",
+    description="You can define your own rule for your Server.",
+    default_member_permissions=interactions.Permissions.ADMINISTRATOR
 )
-async def add_rule_accept_button(ctx: interactions.ComponentContext, msg_id):
-    # first check if member role is specified for the server
-    if "member_role_id" in (servers[ctx.guild.name]).keys():
-        msg = await interactions.get(bot, interactions.Message, parent_id=int(ctx.channel_id), object_id=int(msg_id))
-        button = interactions.Button(style=interactions.ButtonStyle.SUCCESS, label="Accept",
-                                     custom_id="add_member_role")
-        await msg.edit(components=button)
-        await ctx.send("Setup successfully", ephemeral=True)
-    else:
-        await ctx.send("You first need to specify a role for this button. Use /set_rule_role for this.", ephemeral=True)
+async def define_server_rules(ctx: interactions.CommandContext):
+    modal = interactions.Modal(
+        title="Define a new Rule",
+        custom_id="rule_modal",
+        components=[
+            interactions.TextInput(
+                style=interactions.TextStyleType.SHORT,
+                custom_id="title",
+                label="Choose a title for your Rules"
+            ),
+            interactions.TextInput(
+                style=interactions.TextStyleType.PARAGRAPH,
+                custom_id="content",
+                label="Write your rule content here."
+            )
+        ]
+    )
+    await ctx.popup(modal)
+    await ctx.send("Modal was send!", ephemeral=True)
 
+# -----------------------------------------------------
+# MODAL component
+# manage the modal for entering server rules data to your server
+@bot.modal("rule_modal")
+async def set_server_rule(ctx: interactions.CommandContext, title: str, content: str):
+    # write data first to json-file
+    servers[ctx.guild.name]["server_rules"].update({"title": title, "content": content})
+    with open("./data/server_datas.json", "w") as sI:
+        json.dump(servers, sI, indent=4)
+
+    # create select-menu for answer -> choose a role, user gets after accepting
+    select_menu = interactions.SelectMenu(
+        options=[],
+        placeholder="Choose role",
+        custom_id="rule_role_choose",
+        max_values=1
+    )
+    options = []
+    for role in ctx.guild.roles:
+        options.append(
+            interactions.SelectOption(
+                label=str(role.name),
+                value=int(role.id),
+            )
+        )
+    select_menu.options = options
+
+    await ctx.send("Please choose a role, that people get, when they agree to your rules.", components=select_menu, ephemeral=True)
+
+# -----------------------------------------------------
+# RULE_ACCEPT_CHOOSER component
+# send the new rules with a button for accepting and getting specified role
+@bot.component("rule_role_choose")
+async def rules_accept_role(ctx: interactions.ComponentContext, choosen_roles: str):
+    print(f"Selected role is: {choosen_roles[0]}")
+    servers[ctx.guild.name]["server_rules"].update({"rules_accept_role": choosen_roles[0]})
+    with open("./data/server_datas.json", "w") as sI:
+        json.dump(servers, sI, indent=4)
+
+    embed = interactions.Embed()
+    embed.title = servers[ctx.guild.name]["server_rules"]["title"]
+    embed.description = servers[ctx.guild.name]["server_rules"]["content"]
+    embed.color = int(('#%02x%02x%02x' % (90, 232, 240)).replace("#", "0x"), base=16)
+
+    button = interactions.Button(style=interactions.ButtonStyle.SUCCESS, label="Accept",
+                                 custom_id="add_rule_accept_role")
+    await ctx.channel.send(embeds=embed, components=button)
+    await ctx.send("Rules were successfully set up!", ephemeral=True)
 
 # -----------------------------------------------------
 # RULE-BUTTON component
-# Component for the Accept-Button -> called if clicked
-@bot.component("add_member_role")
+# Component for the Accept-Button -> called if clicked -> give role to user
+@bot.component("add_rule_accept_role")
 async def func(ctx: interactions.ComponentContext):
-    member_role_id = servers[ctx.guild.name]["member_role_id"]
+    rule_accept_role_id = servers[ctx.guild.name]["server_rules"]["rules_accept_role"]
     # check if user has role or not
-    if (ctx.author.roles is None) or (not (member_role_id in ctx.author.roles)):
+    if (ctx.author.roles is None) or (not (interactions.Snowflake(rule_accept_role_id) in ctx.author.roles)):
         # if not add role to user
-        await ctx.author.add_role(member_role_id, int(ctx.guild_id))
-        await ctx.send("Now you can use the Server", ephemeral=True)
+        await ctx.author.add_role(rule_accept_role_id, int(ctx.guild_id))
+        await ctx.send("You can now use the Server", ephemeral=True)
     else:
         # if already has, send only a message to the user
-        await ctx.send("You already have this role!", ephemeral=True)
-
-
-# -----------------------------------------------------
-# RULE-ROLE-SET command
-@bot.command(
-    name="set_rule_role",
-    description="Set the rule that a member get if he accept to the roles",
-    default_member_permissions=interactions.Permissions.MANAGE_ROLES,
-    options=[
-        interactions.Option(
-            name="role",
-            description="Specifys the role, members will get if react to Rule-Accept-Button",
-            type=interactions.OptionType.ROLE,
-            requierd=True
-        ),
-    ],
-)
-async def set_rule_role(ctx: interactions.CommandContext, role: interactions.Role):
-    servers[ctx.guild.name].update({"member_role_id": int(role.id)})
-    with open("./data/server_datas.json", "w") as sI:
-        json.dump(servers, sI, indent=4)
-    await ctx.send("Successfully set role as standard Member role", ephemeral=True)
-
-
-# -----------------------------------------------------
-# ADD RULE command ( for add rules to servers )
-@bot.command(
-    name="add_rule",
-    description="Add a new rule to the server",
-    options=[
-        interactions.Option(
-            name="title",
-            description="The Title of the rule",
-            type=interactions.OptionType.STRING,
-            required=True,
-        ),
-        interactions.Option(
-            name="content",
-            description="The content of the rule",
-            type=interactions.OptionType.STRING,
-            required=True,
-        ),
-    ],
-)
-async def add_rule(ctx: interactions.CommandContext, title: str, content: str):
-    servers[ctx.guild.name]["rules"].update({title: content})
-    with open("./data/server_datas.json", "w") as sI:
-        json.dump(servers, sI, indent=4)
-    await ctx.send(f"Rule {title} was successfully added to Serverrules!", ephemeral=True)
-
-
-# -----------------------------------------------------
-# REMOVE RULE command ( remove a rule from servers )
-@bot.command(
-    name="remove_rule",
-    description="Remove a rule from the server",
-    options=[
-        interactions.Option(
-            name="title",
-            description="The Title of the rule",
-            type=interactions.OptionType.STRING,
-            required=True,
-        )
-    ],
-)
-async def remove_rule(ctx: interactions.CommandContext, title: str):
-    if title in servers[ctx.guild.name]["rules"].keys():
-        servers[ctx.guild.name]["rules"].pop(title)
-    with open("./data/server_datas.json", "w") as sI:
-        json.dump(servers, sI, indent=4)
-    await ctx.send(f"Rule {title} was successfully removed from Serverrules!", ephemeral=True)
-
-
-# -----------------------------------------------------
-# ADD RULES DESCRIPTION command
-@bot.command(
-    name="add_rule_description",
-    description="Add a description to your Serverrules",
-    options=[
-        interactions.Option(
-            name="content",
-            description="Content of the description",
-            type=interactions.OptionType.STRING,
-            required=True,
-        )
-    ],
-)
-async def add_description(ctx: interactions.CommandContext, content: str):
-    servers[ctx.guild.name].update({"rule_description": content})
-    with open("./data/server_datas.json", "w") as sI:
-        json.dump(servers, sI, indent=4)
-    await ctx.send(f"Description was successfully added to Serverrules!", ephemeral=True)
-
-
-# -----------------------------------------------------
-# REMOVE RULE DESCRIPTION command
-@bot.command(
-    name="remove_rule_description",
-    description="Removes current description from your Serverrules",
-)
-async def remove_description(ctx: interactions.CommandContext):
-    if not("rule_description" in servers[ctx.guild.name].keys()):
-        await ctx.send(f"There is no rule description on this server!", ephemeral=True)
-        return
-    servers[ctx.guild.name].pop("rule_description")
-    with open("./data/server_datas.json", "w") as sI:
-        json.dump(servers, sI, indent=4)
-    await ctx.send(f"Description was successfully removed from Serverrules!", ephemeral=True)
-
+        await ctx.send("You already have the role for accepting to the rules!", ephemeral=True)
 
 # -----------------------------------------------------
 # RULES command
@@ -237,15 +178,12 @@ async def remove_description(ctx: interactions.CommandContext):
     description="Shows the rules of the server",
 )
 async def rules(ctx: interactions.CommandContext):
-    if servers[ctx.guild.name]["rules"] == {} and not "rule_description" in servers[ctx.guild.name].keys():
+    if servers[ctx.guild.name]["server_rules"] == {}:
         return await ctx.send("No Rules specified! Please add rules via `/rule_add` or a description via "
                               "`/add_rule_description`– For more infos type `/help`")
     embed = interactions.Embed()
-    embed.title = f"Rules of {ctx.guild.name}"
-    if "rule_description" in servers[ctx.guild.name].keys():
-        embed.description = servers[ctx.guild.name]["rule_description"]
-    for rule in servers[ctx.guild.name]["rules"].keys():
-        embed.add_field(rule, servers[ctx.guild.name]["rules"][rule])
+    embed.title = servers[ctx.guild.name]["server_rules"]["title"]
+    embed.description = servers[ctx.guild.name]["server_rules"]["content"]
     embed.color = int(('#%02x%02x%02x' % (90, 232, 240)).replace("#", "0x"), base=16)
     await ctx.send(embeds=embed)
 
@@ -266,7 +204,7 @@ async def rules(ctx: interactions.CommandContext):
     ],
 )
 async def kick(ctx: interactions.CommandContext, user: interactions.User):
-    await user.kick(ctx.guild_id)
+    await ctx.guild.kick(user.id)
     await ctx.send(f"{user.mention} has been kicked!")
 
 
@@ -291,7 +229,7 @@ async def kick(ctx: interactions.CommandContext, user: interactions.User):
         ),
     ],
 )
-async def ban(ctx: interactions.CommandContext, user: interactions.User, reason: str = None):
+async def ban(ctx: interactions.CommandContext, user: interactions.Member, reason: str = None):
     if reason:
         await ctx.guild.ban(user, reason=reason)
         return await ctx.send(f"{user} has been banned because {reason}!")
@@ -341,7 +279,7 @@ async def unban(ctx: interactions.CommandContext, user):
         ),
     ],
 )
-async def add_role(ctx: interactions.CommandContext, user: interactions.User, role: interactions.Role):
+async def add_role(ctx: interactions.CommandContext, user: interactions.Member, role: interactions.Role):
     # check if the user already has this role
     if role.id in user.roles:
         await ctx.send(f"{user.mention} already has the role {role.name}!", ephemeral=True)
@@ -372,7 +310,7 @@ async def add_role(ctx: interactions.CommandContext, user: interactions.User, ro
         ),
     ],
 )
-async def remove_role(ctx: interactions.CommandContext, user: interactions.User, role: interactions.Role):
+async def remove_role(ctx: interactions.CommandContext, user: interactions.Member, role: interactions.Role):
     # check if the user does not have the role
     if not (role.id in user.roles):
         await ctx.send(f"{user.mention} doesn't have the role {role.name}!", ephemeral=True)
@@ -498,27 +436,24 @@ async def on_guild_member_remove(ctx):
 
 
 # =====================================================================================================================
-
-#Does not work anymore
-
 # MEME generator command
-#@bot.command(
-#    name="meme",
-#    description="post a random meme",
-#)
-#async def meme(ctx: interactions.CommandContext):
-#    async def gen_meme():
-#        meme_json = requests.get("https://meme-api.herokuapp.com/gimme").text
-#        loaded = json.loads(meme_json)
-#        title = loaded["title"]
-#        url = loaded["url"]
-#        nsfw = loaded["nsfw"]
-#        return title, url, nsfw
-#
-#    nsfw = True
-#    while nsfw != False:
-#        title, url, nsfw = await gen_meme()
-#    await ctx.send(f"**{title}**\n{url}")
+@bot.command(
+    name="meme",
+    description="post a random meme",
+)
+async def meme(ctx: interactions.CommandContext):
+    async def gen_meme():
+        meme_json = requests.get("https://meme-api.herokuapp.com/gimme").text
+        loaded = json.loads(meme_json)
+        title = loaded["title"]
+        url = loaded["url"]
+        nsfw = loaded["nsfw"]
+        return title, url, nsfw
+
+    nsfw = True
+    while nsfw != False:
+        title, url, nsfw = await gen_meme()
+    await ctx.send(f"**{title}**\n{url}")
 
 
 # =====================================================================================================================
@@ -603,126 +538,6 @@ async def func(ctx: interactions.ComponentContext):
     # edit message
     await ctx.edit(embeds=embed)
     # await ctx.send(embeds=embed)
-# =====================================================================================================================
-# Send message command
-@bot.command(
-    name="send",
-    description="Sends a Message",
-    options=[
-        interactions.Option(
-            name="msg",
-            description = "the message the bot sends",
-            type=interactions.OptionType.STRING,
-            required = True
-        )
-    ]
-)
-async def sendmsg(ctx: interactions.CommandContext,msg):
-    await ctx.send(msg)
-# =====================================================================================================================
-# SELECT-MENUS system
 
-@bot.command(
-    name="add_selection_role",
-    description="Add a role to the Role selection box. See /help for more info's",
-    default_member_permissions=interactions.Permissions.MANAGE_ROLES,
-    options=[
-        interactions.Option(
-            name="role",
-            description="The role you want to add",
-            type=interactions.OptionType.ROLE,
-            required=True,
-        ),
-    ],
-)
-async def add_selection_role(ctx: interactions.CommandContext, role: interactions.Role):
-    if "rolebox" in servers[ctx.guild.name].keys():
-        if len(servers[ctx.guild.name]["rolebox"]) == 10:
-            return await ctx.send("You can add a maximum of 10 roles!", ephramel=True)
-        if int(role.id) in servers[ctx.guild.name]["rolebox"]:
-            return await ctx.send("You already added this role!", ephramel=True)
-        servers[ctx.guild.name]["rolebox"].append(int(role.id))
-    else:
-        servers[ctx.guild.name].update({"rolebox": [int(role.id)]})
-    with open("./data/server_datas.json", "w") as sI:
-        json.dump(servers, sI, indent=4)
-    return await ctx.send("Role successfully added!", ephemeral=True)
-
-@bot.command(
-    name="remove_selection_role",
-    description="Removes a role from the Role selection box. See /help for more info's",
-    default_member_permissions=interactions.Permissions.MANAGE_ROLES,
-    options=[
-        interactions.Option(
-            name="role",
-            description="The role you want to remove",
-            type=interactions.OptionType.ROLE,
-            required=True,
-        ),
-    ],
-)
-async def remove_selection_role(ctx: interactions.CommandContext, role: interactions.Role):
-    if "rolebox" in servers[ctx.guild.name].keys():
-        if not(int(role.id) in servers[ctx.guild.name]["rolebox"]):
-            return await ctx.send("the role was not added to the selection or deleted.", ephemeral=True)
-        servers[ctx.guild.name]["rolebox"].remove(int(role.id))
-        if len(servers[ctx.guild.name]["rolebox"]) == 0:
-            servers[ctx.guild.name].pop("rolebox")
-        with open("./data/server_datas.json", "w") as sI:
-            json.dump(servers, sI, indent=4)
-        return await ctx.send("Role successfully removed!", ephemeral=True)
-    return await ctx.send("No rolls saved in the selection. See /help for more info's", ephemeral=True)
-
-
-@bot.command(
-    name="add_select_menu",
-    description="Adds a Discord Select-menu Component to specified message. See /help for detailed description",
-    default_member_permissions=interactions.Permissions.ADMINISTRATOR,
-    options=[
-        interactions.Option(
-            name="msg_id",
-            description="ID of the message",
-            type=interactions.OptionType.STRING,
-            required=True,
-        ),
-    ],
-)
-async def add_select_menu(ctx: interactions.ComponentContext, msg_id: str):
-    # check if elements for the menu are available
-    if not("rolebox" in servers[ctx.guild.name].keys()):
-        return await ctx.send("You first need to add roles with /add_selection_role. Check out /help for more info's",
-                              ephemeral=True)
-    # get the message
-    msg = await interactions.get(bot, interactions.Message, parent_id=int(ctx.channel_id), object_id=int(msg_id))
-    # if message not from bot -> return
-    if msg.author != bot.me: return await ctx.send("Message must come from the bot! See /help", ephemeral=True)
-
-    # create select menu component
-    select_menu = interactions.SelectMenu(
-        options=[],
-        placeholder="Choose your role",
-        custom_id="role_choose",
-        max_values=len(servers[ctx.guild.name]["rolebox"])
-    )
-    options = []
-    for role_id in servers[ctx.guild.name]["rolebox"]:
-        options.append(
-            interactions.SelectOption(
-                label=(await ctx.guild.get_role(role_id)).name,
-                value=role_id,
-            )
-        )
-    select_menu.options = options
-
-    await msg.edit(components=select_menu)
-    await ctx.send("Setup successfully", ephemeral=True)
-
-
-@bot.component("role_choose")
-async def func(ctx: interactions.ComponentContext, role_ids: list[str]):
-    for role_id in role_ids:
-        if not(role_id in ctx.author.roles):
-            await ctx.author.add_role(int(role_id), int(ctx.guild_id))
-    await ctx.send(f"Chosen roles {role_ids}", ephemeral=True)
 
 bot.start()
