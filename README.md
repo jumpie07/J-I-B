@@ -1,18 +1,21 @@
-# Python Discord Bot – Checklist
+# Moved to https://github.com/FelixSiegel/J-I-B
 
-## Currently in Progress
+
+### Python Discord Bot – Checklist
+
+#### Currently in Progress
 
 - create Wiki
 - new function for warn system: see warns of specific user
 - Role-Selecter for getting roles fitted to own intrestings
 - music implementation
 
-## To-Do
+#### To-Do
 
 - [ ] Webboard for Admin (in Progress)
 - [ ] More logs for better Debugging
 
-## Done
+#### Done
 
 - [x] kick-funktion
 - [x] ban-funktion (mit optionaler zeitangabe)
